@@ -375,6 +375,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
                 this.addLineAuthorInfoSettings();
             }
+
+            new Setting(containerEl).setName("Push").setHeading();
+            
+            new Setting(containerEl)
+                .setName("Push on close")
+                .setDesc("Automatically push commits when Obsidian closes.")
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(plugin.settings.autoPushOnClose)
+                        .onChange(async (value) => {
+                            plugin.settings.autoPushOnClose = value;
+                            await plugin.saveSettings();
+                        })
+                );
         }
 
         new Setting(containerEl).setName("History view").setHeading();

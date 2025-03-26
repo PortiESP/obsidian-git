@@ -14,8 +14,9 @@ export interface ObsidianGitSettings {
     syncMethod: SyncMethod;
     /**
      * Whether to push on commit-and-sync
-     */
-    disablePush: boolean;
+    */
+   disablePush: boolean;
+   autoPushOnClose: boolean;
     /**
      * Whether to pull on commit-and-sync
      */

@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
         autoPushInterval: 0,
         autoPullInterval: 0,
         autoPullOnBoot: false,
+        autoPushOnClose: true,
         disablePush: false,
         pullBeforePush: true,
         disablePopups: false,

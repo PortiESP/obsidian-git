@@ -52,6 +52,7 @@ import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { formatRemoteUrl, splitRemoteBranch } from "./utils";
 import Tools from "./tools";
 import SplitDiffView from "./ui/diff/splitDiffView";
+import { exec } from "child_process";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -155,6 +156,56 @@ export default class ObsidianGit extends Plugin {
                     this.displayError(e)
                 )
             );
+        }
+
+        // Register the beforeunload event
+        window.addEventListener("beforeunload", this.handleBeforeUnload.bind(this));
+    }
+
+    async onunload() {
+        // Clean up the beforeunload event
+        window.removeEventListener("beforeunload", this.handleBeforeUnload.bind(this));
+
+        // Ensure all asynchronous operations are completed
+        try {
+            await this.unloadPlugin();
+        } catch (error) {
+            console.error("Error during plugin unload:", error);
+        }
+
+        console.log("unloading " + this.manifest.name + " plugin");
+    }
+
+    /**
+     * Handles the beforeunload event to ensure Git operations are completed before the app closes.
+     */
+    async handleBeforeUnload(event: BeforeUnloadEvent): Promise<void> {
+        if (this.settings.autoPushOnClose) {
+            event.preventDefault(); // Prevent the app from closing immediately
+
+            try {
+                console.log("Auto-pushing changes before closing the app...");
+                await new Notice("Auto-pushing changes before closing the app...")
+
+                // Stage all changes
+                await this.gitManager.stageAll({ dir: "." });
+
+                // Commit changes with a default or custom message
+                const commitMessage = this.settings.autoCommitMessage || "Auto-commit on app close";
+                await this.commit({ fromAuto: true, commitMessage });
+
+                // Push changes to the remote repository
+                const remotes = await this.gitManager.getRemotes()
+                console.log(remotes)
+                if (remotes.length > 0) {
+                    await this.push();
+                    return;
+                }
+
+                console.log("Auto-push completed successfully.");
+            } catch (error) {
+                console.error("Error during auto-push on app close:", error);
+            }
         }
     }
 
@@ -459,7 +510,7 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    unloadPlugin() {
+    async unloadPlugin() {
         this.gitReady = false;
 
         this.lineAuthoringFeature.deactivateFeature();
@@ -475,12 +526,6 @@ export default class ObsidianGit extends Plugin {
         this.intervalsToClear = [];
 
         this.debRefresh.cancel();
-    }
-
-    onunload() {
-        this.unloadPlugin();
-
-        console.log("unloading " + this.manifest.name + " plugin");
     }
 
     async loadSettings() {
